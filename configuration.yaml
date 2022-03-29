@@ -1,0 +1,26 @@
+homeassistant:
+  packages: !include_dir_named packages
+
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+http:
+  ssl_certificate: /ssl/fullchain.pem
+  ssl_key: /ssl/privkey.pem
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+home_connect:
+  client_id: !secret hc_client_id
+  client_secret: !secret hc_client_secret
+
+influxdb: !include influxdb.yaml
+recorder: !include recorder.yaml
+ltss: !include ltss.yaml

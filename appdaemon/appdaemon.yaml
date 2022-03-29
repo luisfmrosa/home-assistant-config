@@ -1,0 +1,32 @@
+---
+secrets: /config/secrets.yaml
+appdaemon:
+  latitude: !secret latitude
+  longitude: !secret longitude
+  elevation: !secret altitude
+  time_zone: !secret timezone
+  plugins:
+    HASS:
+      type: hass
+http:
+  url: http://127.0.0.1:5050
+admin:
+api:
+hadashboard:
+
+# Log files
+logs:
+  main_log:
+    filename: /config/logs/appdaemon.log
+    
+  access_log:
+    filename: /config/logs/access.log
+
+  error_log:
+    filename: /config/logs/error.log
+  
+  piscine_log:
+    name: PiscineLog
+    filename: /config/logs/piscine.log
+    log_generations: 3
+    log_size: 100000
