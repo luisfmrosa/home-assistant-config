@@ -13,6 +13,7 @@ custom_components
 image
 logs
 **/__pycache__
+zigpy_ota
 
 # Ensure these YAML files are ignored, otherwise your secret data/credentials will leak.
 ip_bans.yaml

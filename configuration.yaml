@@ -24,3 +24,11 @@ home_connect:
 influxdb: !include influxdb.yaml
 recorder: !include recorder.yaml
 ltss: !include ltss.yaml
+
+# mise a  jour OTA du ZLINKY_TIC
+zha:
+  zigpy_config:
+    ota:
+      otau_directory: /config/zigpy_ota
+      ikea_provider: false
+      ledvance_provider: false

@@ -40,30 +40,62 @@
     entity_id: light.tz3000_5bsf8vaj_ts0505a_978ce4fe_level_light_color_on_off
     domain: light
   mode: single
-- id: '1647725065844'
-  alias: Boutons salon
-  description: Permet d'allumer les abat-jours et ventilateurs de la cheminée.
+- id: '1649530537208'
+  alias: Associer bouton cuisine lampe externe
+  description: ''
+  use_blueprint:
+    path: apollo1220/zha-sonoff-button-press-double-press-hold-actions.yaml
+    input:
+      button_id: 7ff3606dd6dc00e8ad9be5208aa56ab9
+      press_action:
+      - type: toggle
+        device_id: 855b274bfcc566eb5732df94c7cb70ef
+        entity_id: light.tz3000_5bsf8vaj_ts0505a_978ce4fe_level_light_color_on_off
+        domain: light
+- id: '1649537188340'
+  alias: Bouton vers abatjour
+  description: ''
+  use_blueprint:
+    path: apollo1220/zha-sonoff-button-press-double-press-hold-actions.yaml
+    input:
+      button_id: b44d9f19aa7e7138f81e507d5a4f235e
+      press_action:
+      - type: toggle
+        device_id: bd825139ec1d98a7cf24b782bd2a34c0
+        entity_id: switch.prise_abatjour_on_off
+        domain: switch
+- id: '1653171943515'
+  alias: Prises 4 boutons - Salon
+  description: 'Automation utilisée pour allumer/éteindre:
+
+    - Bouton 1: prise lampe côté cuisine
+
+    - Bouton 2: lampe côté gauche cheminée
+
+    - Bouton 3: lampe côté droite cheminée
+
+    - Bouton 4: prise ventilateur cheminée'
   use_blueprint:
     path: luisfmrosa/zha-ts004f-tuya-4-button-dimmer-switch-blueprint.yaml
     input:
-      tuya_4button_dimmer_switch: 1c718c731f42ff34af6e967abe190630
-      button_one_short_press:
+      tuya_4button_switch: 1c718c731f42ff34af6e967abe190630
+      button_1_click:
       - type: toggle
         device_id: a3cc2e93d32b14c725bbcdc3e0a5fcdc
         entity_id: switch.prise_lampe_cote_cuisine_on_off
         domain: switch
-      button_two_short_press:
+      button_2_click:
+      - type: toggle
+        device_id: f1e7face819836455e5542cc3e9f8493
+        entity_id: light.tz3000_odygigth_ts0505a_2421d6fe_level_light_color_on_off
+        domain: light
+      button_3_click:
       - type: toggle
         device_id: 1043e590b75c6cefe82ecafff45dabbc
         entity_id: switch.prise_ventilateur_cheminee_on_off
         domain: switch
-      button_three_short_press:
+      button_4_click:
       - type: toggle
-        device_id: 0975f80d61b28078cb26002eed1a05dd
-        entity_id: light.lampe_cheminee_gauche_level_light_color_on_off
-        domain: light
-      button_four_short_press:
-      - type: toggle
-        device_id: 18a1268f01529398721e4b9be262bfaf
-        entity_id: light.lampe_cheminee_droite_level_light_color_on_off
+        device_id: 1882157d5bf425efdc01f35f12f2e0ac
+        entity_id: light.tz3000_dbou1ap4_ts0505a_03741bfe_level_light_color_on_off
         domain: light
