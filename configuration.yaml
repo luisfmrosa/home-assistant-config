@@ -32,3 +32,7 @@ zha:
       otau_directory: /config/zigpy_ota
       ikea_provider: false
       ledvance_provider: false
+      salus_provider: false
+
+# activate zha_toolkit from hacs
+zha_toolkit:

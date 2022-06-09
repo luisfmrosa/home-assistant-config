@@ -1,0 +1,28 @@
+template:
+- sensor:
+  - name: lixee_zlinky_tic_metering_HC
+    unit_of_measurement: "Wh"
+    device_class: energy
+    state_class: total_increasing
+    state: unavailable
+
+  - name: lixee_zlinky_tic_metering_HP
+    unit_of_measurement: "Wh"
+    device_class: energy
+    state_class: total_increasing
+    state: unavailable
+  
+  - name: lixee_zlinky_tic_metering_HC_HP_sum
+    unit_of_measurement: "Wh"
+    device_class: energy
+    state_class: total_increasing
+    state: >-
+      {% if is_state('sensor.lixee_zlinky_tic_metering_HC', 'unavailable') %}
+        unavailable
+      {% elif is_state('sensor.lixee_zlinky_tic_metering_HP', 'unavailable') %}
+        unavailable
+      {% else %}
+        {% set HC = states('sensor.lixee_zlinky_tic_metering_HC') | int %}
+        {% set HP = states('sensor.lixee_zlinky_tic_metering_HP') | int %}
+        {{ HC + HP }}
+      {% endif %}

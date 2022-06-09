@@ -99,3 +99,30 @@
         device_id: 1882157d5bf425efdc01f35f12f2e0ac
         entity_id: light.tz3000_dbou1ap4_ts0505a_03741bfe_level_light_color_on_off
         domain: light
+- id: '1653185467799'
+  alias: Read ZLinky_TIC HC + HP every minute
+  description: ''
+  trigger:
+  - platform: time_pattern
+    hours: '*'
+    minutes: /1
+    seconds: '0'
+  condition: []
+  action:
+  - service: zha_toolkit.execute
+    data:
+      command: attr_read
+      ieee: 00:15:8d:00:05:d2:99:4d
+      cluster: 1794
+      attribute: 256
+      state_id: sensor.lixee_zlinky_tic_metering_HC
+      allow_create: false
+  - service: zha_toolkit.execute
+    data:
+      command: attr_read
+      ieee: 00:15:8d:00:05:d2:99:4d
+      cluster: 1794
+      attribute: 258
+      state_id: sensor.lixee_zlinky_tic_metering_HP
+      allow_create: false
+  mode: single
