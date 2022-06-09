@@ -1,4 +1,4 @@
-# Version du 24/02/2022
+# Version du 30/05/2022
 import hassapi as hass
 import datetime
 from datetime import timedelta
@@ -78,27 +78,32 @@ class FiltrationPiscine(hass.Hass):
         if new!= "unavailable":
             self.notification('Appel traitement changement Temp.',2)
             self.traitement(kwargs)
+
 # Appelé sur changement de mode de fonctionnement
     def change_mode(self, entity, attribute, old, new, kwargs):
         global JOURNAL, FIN_TEMPO
         FIN_TEMPO = 0
         self.notification('Appel traitement changement Mode.',2)
         self.traitement(kwargs)
+
 # Appelé sur changement de coefficient
     def change_coef(self, entity, attribute, old, new, kwargs):
         global JOURNAL
         self.notification('Appel traitement changement Coef.',2)
         self.traitement(kwargs)
+
 # Appelé sur changement de mode de calcul
     def change_mode_calcul(self, entity, attribute, old, new, kwargs):
         global JOURNAL
         self.notification('Appel traitement changement mode de calcul.',2)
         self.traitement(kwargs)
+
 # Appelé sur changement arret forcé
     def change_arret_force(self, entity, attribute, old, new, kwargs):
         global JOURNAL
         self.notification('Appel traitement sur arret force.',2)
         self.traitement(kwargs)
+
 # Appelé sur changement d'état de la pompe de filtrage
     def change_etat_pompe(self, entity, attribute, old, new, kwargs):
         global JOURNAL, FIN_TEMPO ,DUREE_TEMPO
@@ -113,13 +118,14 @@ class FiltrationPiscine(hass.Hass):
                 self.tempo = self.cancel_timer(cle_tempo)
 
         self.notification('Appel traitement changement etat pompe.',2)
-        self.traitement(kwargs)
+        #self.traitement(kwargs)
+        
 # Appelé sur fin temporisation suit à demarrage de la pompe
     def fin_temporisation_mesure_temp(self,kwargs):
         global JOURNAL, FIN_TEMPO 
         FIN_TEMPO = 1
         self.notification('Fin temporisation circulation eau.',2)
-        self.traitement(kwargs)
+        #self.traitement(kwargs)
 
 # Ecretage Heure pivot entre h_pivot_min et h_pivot_max
     def ecretage_h_pivot(self, entity, attribute, old, new, kwargs):
@@ -153,17 +159,18 @@ class FiltrationPiscine(hass.Hass):
 
         # Flag FIN_TEMPO
         self.notification("Flag fin tempo= "+str(FIN_TEMPO),2)
+        # Temporisation avant prise en compte de la mesure de la temperature
+        # sinon on travaille avec la memoire de la 
+        # temperature avant arret de la pompe
+        # mémorise la température eau de la veille.
+        if FIN_TEMPO == 1:
+            Temperature_eau=Mesure_temperature_eau
+            self.set_value(self.args["mem_temp"], Mesure_temperature_eau)
+        else:
+            Temperature_eau=Mem_temperature_eau
 
         #  Mode Ete
         if mode_de_fonctionnement == TAB_MODE[0]:
-            # Temporisation avant prise en compte de la mesure de la temperature
-            # sinon on travaille avec la memoire de la temperature avant arret de la pompe
-            # mémorise la température eau de la veille.
-            if FIN_TEMPO == 1:
-                Temperature_eau=Mesure_temperature_eau
-                self.set_value(self.args["mem_temp"], Mesure_temperature_eau)
-            else:
-                Temperature_eau=Mem_temperature_eau
 
             if mode_calcul == "on": # Calcul selon Abaque
                 temps_filtration = (duree_abaque(Temperature_eau)) * coef
@@ -209,7 +216,7 @@ class FiltrationPiscine(hass.Hass):
             self.set_textvalue(periode_filtration,affichage_texte)
             # Ajouté le 30 mai 2022
             self.set_value("input_number.duree_filtration_ete",round(temps_filtration,2))
-
+            # fin ajout
             # Marche pompe si dans plage horaire sinon Arret
             if self.now_is_between(str(h_debut),str(h_fin)):
                 ma_ppe=1
