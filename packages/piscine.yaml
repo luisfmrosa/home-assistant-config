@@ -108,6 +108,16 @@ input_number:
     icon: mdi:clock
     mode: box
 
+# Durée de filtration en été calculée par appdaemon
+  duree_filtration_ete:
+    name: Durée filtration en Ete
+    min: 0
+    max: 24
+    unit_of_measurement: h
+    step: 0.1
+    icon: mdi:clock
+    mode: box
+
 # Durée de filtration max en hiver
   filtration_coeff_abaque:
     name: Coeff filtration Piscine Abaque
