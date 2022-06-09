@@ -243,7 +243,7 @@ template:
     - name: "Heure pivot Soleil"
       unique_id: "heure_pivot_soleil"
       state: >
-        {{ as_timestamp(states.sun.sun.attributes.next_noon) | timestamp_custom(' %H %M')}}
+        {{ as_timestamp(state_attr("sun.sun", "next_noon")) | timestamp_custom(' %H %M') | timestamp_custom(' %H %M')}}
       icon: mdi:weather-sunset
 
     - name: "Energie Piscine Jour"
