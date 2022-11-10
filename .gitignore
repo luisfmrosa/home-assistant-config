@@ -22,3 +22,4 @@ known_devices.yaml
 *.log
 *.log.*
 *.db
+*.db-*
