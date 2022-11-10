@@ -30,9 +30,10 @@ automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
-home_connect:
-  client_id: !secret hc_client_id
-  client_secret: !secret hc_client_secret
+# Deprecated, according to log, can be safely removed
+# home_connect:
+#   client_id: !secret hc_client_id
+#   client_secret: !secret hc_client_secret
 
 influxdb: !include influxdb.yaml
 recorder: !include recorder.yaml
