@@ -16,29 +16,14 @@
   - platform: state
     from: 'off'
     to: 'on'
-    entity_id: light.tz3000_5bsf8vaj_ts0505a_978ce4fe_level_light_color_on_off
+    entity_id:
+    - light.lampe_externe_level_light_color_on_off
   condition: []
   action:
   - service: notify.notify
     data:
       message: Lumière externe allumée
       title: Home Assistant Alert
-  mode: single
-- id: '1646526388783'
-  alias: Poussoir Lampe Externe
-  description: ''
-  trigger:
-  - platform: event
-    event_type: zha_event
-    event_data:
-      device_id: 10810a52d988ea9a08902d3607d02547
-      command: 'off'
-  condition: []
-  action:
-  - type: toggle
-    device_id: 855b274bfcc566eb5732df94c7cb70ef
-    entity_id: light.tz3000_5bsf8vaj_ts0505a_978ce4fe_level_light_color_on_off
-    domain: light
   mode: single
 - id: '1649530537208'
   alias: Associer bouton cuisine lampe externe
@@ -50,7 +35,7 @@
       press_action:
       - type: toggle
         device_id: 855b274bfcc566eb5732df94c7cb70ef
-        entity_id: light.tz3000_5bsf8vaj_ts0505a_978ce4fe_level_light_color_on_off
+        entity_id: light.lampe_externe_level_light_color_on_off
         domain: light
 - id: '1649537188340'
   alias: Bouton vers abatjour
@@ -112,11 +97,11 @@
   - service: zha_toolkit.execute
     data:
       command: attr_read
-      ieee: 00:15:8d:00:05:d2:99:4d
       cluster: 1794
       attribute: 256
       state_id: sensor.lixee_zlinky_tic_metering_HC
       allow_create: false
+      ieee: 00:15:8d:00:05:d2:99:4d
   - service: zha_toolkit.execute
     data:
       command: attr_read
@@ -126,3 +111,175 @@
       state_id: sensor.lixee_zlinky_tic_metering_HP
       allow_create: false
   mode: single
+- id: '1654936293797'
+  alias: Associer Button chaufferie lampe externe
+  description: ''
+  use_blueprint:
+    path: apollo1220/zha-sonoff-button-press-double-press-hold-actions.yaml
+    input:
+      button_id: 10810a52d988ea9a08902d3607d02547
+      press_action:
+      - type: toggle
+        device_id: 855b274bfcc566eb5732df94c7cb70ef
+        entity_id: light.tz3000_5bsf8vaj_ts0505a_978ce4fe_level_light_color_on_off
+        domain: light
+- id: '1662222936901'
+  alias: Chambre Provence - 2 buttons
+  description: ''
+  trigger:
+  - device_id: 3ab9c428743d0b8a5c6a42a425ec26d7
+    domain: zha
+    platform: device
+    type: remote_button_short_press
+    subtype: button_1
+    id: Bouton.2_switches.1st_button_press
+  - device_id: 3ab9c428743d0b8a5c6a42a425ec26d7
+    domain: zha
+    platform: device
+    type: remote_button_short_press
+    subtype: button_2
+  condition: []
+  action:
+  - if:
+    - condition: trigger
+      id: Bouton.2_switches.1st_button_press
+    then:
+    - type: toggle
+      device_id: 1d7d7e31fc798167e1b738f78c62d888
+      entity_id: switch.prise_lampe_ancienne_on_off
+      domain: switch
+    else:
+    - type: toggle
+      device_id: 57d06ece0d720e540cf89f953a317a44
+      entity_id: switch.prise_ventilateur_on_off
+      domain: switch
+  mode: single
+- id: '1662312239816'
+  alias: Chaufferie - Mouvement allume lumière
+  description: Si mouvement détecté, lumière s'allume pendant 1 minute.
+  trigger:
+  - type: motion
+    platform: device
+    device_id: 822d84d105e801440d1c989a04d0c6ad
+    entity_id: binary_sensor.sensorpresence_iaszone
+    domain: binary_sensor
+    id: Chaufferie.presence.started
+  - type: no_motion
+    platform: device
+    device_id: 822d84d105e801440d1c989a04d0c6ad
+    entity_id: binary_sensor.sensorpresence_iaszone
+    domain: binary_sensor
+  condition: []
+  action:
+  - if:
+    - condition: trigger
+      id: Chaufferie.presence.started
+    then:
+    - type: turn_on
+      device_id: f937b273addd94fec7ad915562ea9182
+      entity_id: light.switchlampe_interne_light
+      domain: light
+    else:
+    - type: turn_off
+      device_id: f937b273addd94fec7ad915562ea9182
+      entity_id: light.switchlampe_interne_light
+      domain: light
+  mode: single
+- id: '1668031421209'
+  alias: Piscine-Hors-Gel
+  description: Déclanche la pompe de la piscine si la température extérieure franchit
+    les seuils 1 (marche 15 min) ou 2 (marche 30 min).
+  trigger:
+  - platform: time_pattern
+    hours: '1'
+  - platform: state
+    entity_id: input_boolean.hors_gel_valid
+    id: hg_deval
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: numeric_state
+        entity_id: sensor.lumi_lumi_weather_6fa6f207_temperature
+        below: input_number.hors_gel_inf_seuil2
+      - condition: state
+        entity_id: input_select.mode_fonctionnement_piscine
+        state: Hiver
+      - condition: state
+        entity_id: input_boolean.hors_gel_valid
+        state: 'on'
+      sequence:
+      - service: input_select.select_option
+        data:
+          option: Ma F
+        target:
+          entity_id: input_select.mode_fonctionnement_piscine
+      - service: notify.notify
+        data:
+          message: '{{states("sensor.date_time") }}'
+          title: Piscine Hors-Gel Seuil 2 Pompe Demarrée
+      - delay:
+          hours: 0
+          minutes: 30
+          seconds: 0
+          milliseconds: 0
+      - service: input_select.select_option
+        data:
+          option: Hiver
+        target:
+          entity_id: input_select.mode_fonctionnement_piscine
+      - service: notify.notify
+        data:
+          title: Piscine Hors-Gel Seuil 2 Arrêt Pompe
+          message: '{{states("sensor.date_time") }}'
+    - conditions:
+      - condition: numeric_state
+        entity_id: sensor.lumi_lumi_weather_6fa6f207_temperature
+        below: input_number.hors_gel_inf_seuil1
+      - condition: state
+        entity_id: input_select.mode_fonctionnement_piscine
+        state: Hiver
+      - condition: state
+        entity_id: input_boolean.hors_gel_valid
+        state: 'on'
+      sequence:
+      - service: input_select.select_option
+        data:
+          option: Ma F
+        target:
+          entity_id: input_select.mode_fonctionnement_piscine
+      - service: notify.notify
+        data:
+          title: Piscine Hors-Gel Seuil 1 Marche Pompe
+          message: '{{states("sensor.date_time") }}'
+      - delay:
+          hours: 0
+          minutes: 15
+          seconds: 0
+          milliseconds: 0
+      - service: input_select.select_option
+        data:
+          option: Hiver
+        target:
+          entity_id: input_select.mode_fonctionnement_piscine
+      - service: notify.notify
+        data:
+          title: Piscine Hors-Gel Seuil 1 Arrêt Pompe
+          message: '{{states("sensor.date_time") }}'
+    - conditions:
+      - condition: trigger
+        id: hg_deval
+      sequence:
+      - service: input_select.select_option
+        data:
+          option: Hiver
+        target:
+          entity_id: input_select.mode_fonctionnement_piscine
+      - service: notify.notify
+        data:
+          title: Piscine Hors-Gel dévalidé
+          message: '{{states("sensor.date_time") }}'
+  mode: restart
+  max: 10
