@@ -7,8 +7,6 @@ import hassapi as hass
 # Variables globales
 # Saisir ici les memes modes que dans HA 
 TAB_MODE = ["Ete", "Hiver", "At F", "Ma F"]
-# RAZ du flag fin_tempo
-FIN_TEMPO: bool = False
 
 
 class FiltrationPiscine(hass.Hass):
@@ -23,6 +21,15 @@ class FiltrationPiscine(hass.Hass):
     # intervale en minutes entre les executions
     intervale_minutes: int = 5
 
+    # Flag de fin de la temporisation
+    fin_tempo: bool = False
+
+    # Cle temporisateur
+    tempo = None
+
+    # Durée temporisateur pompe (parametre "tempo_eau")
+    duree_tempo: float = None
+
     # coeficients utilisées en duree_abaque():
     abaque_a: float = 0.00335
     abaque_b: float = -0.14953
@@ -30,8 +37,10 @@ class FiltrationPiscine(hass.Hass):
     abaque_d: float = -10.72859
 
     def initialize(self):
-        global FIN_TEMPO
-
+        """
+        Initialise la classe, executé au démarrage de la classe.
+        :return: NoReturn
+        """
         self.logger = self.get_main_log()
 
         self.logger.info("Initialisation AppDaemon Filtration Piscine.")
@@ -43,13 +52,16 @@ class FiltrationPiscine(hass.Hass):
         self.listen_state(self.change_mode_calcul, self.args["mode_calcul"])
         self.listen_state(self.change_etat_pompe, self.args["cde_pompe"])
         self.listen_state(self.change_arret_force, self.args["arret_force"])
-        self.run_every(self.touteslesxminutes, "now", self.intervale_minutes * 60)
+
+        # Lance le traitement a chaque self.intervale_minutes (minutes)
+        self.logger.debug(f'Ajout temporisateur pour exécuter le traitement toutes les {self.intervale_minutes} min.')
+        self.run_every(self.traitement, "now", self.intervale_minutes * 60)
 
         # initialisation de la temporisation avant recopie temperature
-        DUREE_TEMPO = float(self.get_state(self.args["tempo_eau"]))
-        self.logger.info(f"Duree tempo: {DUREE_TEMPO}")
-        self.tempo = self.run_in(self.fin_temporisation_mesure_temp, DUREE_TEMPO, entité=self.args["cde_pompe"])
-        FIN_TEMPO = False        # Arret de la pompe sur initalisation
+        self.duree_tempo = float(self.get_state(self.args["tempo_eau"]))
+        self.logger.info(f"Duree tempo: {self.duree_tempo}")
+        self.tempo = self.run_in(self.fin_temporisation_mesure_temp, self.duree_tempo, entité=self.args["cde_pompe"])
+        self.fin_tempo = False        # Arret de la pompe sur initalisation
         self.turn_off(self.args["cde_pompe"])
 
     @staticmethod
@@ -134,8 +146,7 @@ class FiltrationPiscine(hass.Hass):
         :param kwargs: remaining arguments.
         :return: NoReturn
         """
-        global FIN_TEMPO
-        FIN_TEMPO = False
+        self.fin_tempo = False
         self.logger.debug('Appel traitement changement Mode.')
         self.traitement(kwargs)
 
@@ -189,17 +200,17 @@ class FiltrationPiscine(hass.Hass):
         :param kwargs: remaining arguments.
         :return: NoReturn
         """
-        global FIN_TEMPO, DUREE_TEMPO
-        FIN_TEMPO = False
+        self.fin_tempo = False
         if new == "on":
-            self.tempo = self.run_in(self.fin_temporisation_mesure_temp, DUREE_TEMPO)
+            self.logger.debug(f"Etat pompe changé à 'on': appel à fin temporisation dans {self.duree_tempo}")
+            self.tempo = self.run_in(self.fin_temporisation_mesure_temp, self.duree_tempo)
         else:
-            cle_tempo = self.tempo
-            if cle_tempo is not None:
-                cle_tempo = self.tempo
-                self.tempo = self.cancel_timer(cle_tempo)
+            self.logger.debug(f"Etat pompe changé à '{new}': arrêt temporisateur {self.tempo}")
+            if self.tempo is not None:
+                self.tempo = self.cancel_timer(self.tempo)
+                self.logger.debug(f"self.tempo après arrêt tempo': {self.tempo}")
 
-        self.logger.debug('Appel traitement changement etat pompe.')
+        # self.logger.debug('Appel traitement changement etat pompe.')
         # self.traitement(kwargs)
 
     def fin_temporisation_mesure_temp(self, kwargs):
@@ -208,8 +219,7 @@ class FiltrationPiscine(hass.Hass):
         :param kwargs: liste des arguments.
         :return:
         """
-        global FIN_TEMPO
-        FIN_TEMPO = True
+        self.fin_tempo = True
         self.logger.debug('Fin temporisation circulation eau.')
         # self.traitement(kwargs)
 
@@ -232,22 +242,13 @@ class FiltrationPiscine(hass.Hass):
             self.set_state(self.args["h_pivot"], state=h_pivot_min)
         self.traitement(kwargs)
 
-    def touteslesxminutes(self, kwargs):
-        """
-        Méthode appelée toutes les x minutes.
-        :param kwargs: liste des arguments.
-        :return:
-        """
-        self.logger.debug(f'Appel traitement toutes les {self.intervale_minutes} minutes.')
-        self.traitement(kwargs)
-
     def traitement(self, kwargs):
         """
         Traitement de calcul de la température.
         :param kwargs: liste d'arguments de la fonction.
         :return: NoReturn.
         """
-        global FIN_TEMPO
+        self.logger.debug('Démarrage traitement...')
         h_locale = time.strftime('%H:%M:%S', time.localtime())
         mesure_temperature_eau = float(self.get_state(self.args["temperature_eau"]))
         mem_temperature_eau = float(self.get_state(self.args["mem_temp"]))
@@ -260,12 +261,12 @@ class FiltrationPiscine(hass.Hass):
         periode_filtration = self.args["periode_filtration"]
 
         # Flag FIN_TEMPO
-        self.logger.debug(f"Flag fin tempo = {FIN_TEMPO}")
+        self.logger.debug(f"Flag fin tempo = {self.fin_tempo}")
         # Temporisation avant prise en compte de la mesure de la temperature
         # sinon on travaille avec la memoire de la 
         # temperature avant arret de la pompe
         # mémorise la température eau de la veille.
-        if FIN_TEMPO:
+        if self.fin_tempo:
             temperature_eau = mesure_temperature_eau
             self.set_value(self.args["mem_temp"], mesure_temperature_eau)
         else:
@@ -314,10 +315,7 @@ class FiltrationPiscine(hass.Hass):
             self.set_value("input_number.duree_filtration_ete", round(temps_filtration, 2))
             # fin ajout
             # Marche pompe si dans plage horaire sinon Arret
-            if self.now_is_between(str(h_debut), str(h_fin)):
-                ma_ppe = 1
-            else:
-                ma_ppe = 0
+            marche_pompe: bool = self.now_is_between(str(h_debut), str(h_fin))
 
             # Notifications de debug
             self.logger.debug(f"Mode de fonctionnement: {mode_de_fonctionnement}")
@@ -339,26 +337,21 @@ class FiltrationPiscine(hass.Hass):
 
             self.logger.debug(f"h_debut_h: {h_debut_h}, Duree H: {duree_h}, H_fin: {h_fin_f}")
             # Marche pompe si dans plage horaire sinon Arret
-            if self.now_is_between(str(h_debut_h), str(h_fin_f)):
-                ma_ppe = 1
-            else:
-                ma_ppe = 0
+            marche_pompe = self.now_is_between(str(h_debut_h), str(h_fin_f))
 
         # Mode Arret Forcé
         elif mode_de_fonctionnement == TAB_MODE[2]:
-            ma_ppe = 0
-            text_affichage = "At manuel"
-            self.set_textvalue(periode_filtration, text_affichage)
+            marche_pompe = False
+            self.set_textvalue(periode_filtration, "At manuel")
 
         # Mode Marche Forcée
         elif mode_de_fonctionnement == TAB_MODE[3]:
-            ma_ppe = 1
-            text_affichage = "Ma manuel"
-            self.set_textvalue(periode_filtration, text_affichage)
+            marche_pompe = True
+            self.set_textvalue(periode_filtration, "Ma manuel")
 
         # Mode Inconnu: revoir le contenu de Input_select.mode_de_fonctionnement
         else:
-            self.logger.info(f"Mode de fonctionnement Piscine Inconnu: {mode_de_fonctionnement}")
+            self.logger.warning(f"Mode de fonctionnement Piscine Inconnu: {mode_de_fonctionnement}")
 
         # Calcul sortie commande pompe filtration
         # Arret pompe sur arret forcé
@@ -367,9 +360,11 @@ class FiltrationPiscine(hass.Hass):
             self.logger.info("Arrêt par Deléstage (Forcé)")
             self.set_textvalue(periode_filtration, "At delestage")
         else:
-            if ma_ppe == 1:
+            if marche_pompe:
                 self.turn_on(pompe)
                 self.logger.info("Marche Pompe")
             else:
                 self.turn_off(pompe)
                 self.logger.info("Arrêt Pompe")
+
+        self.logger.debug('Fin traitement.')
