@@ -48,13 +48,19 @@ def en_heure(t):
     return "{:02d}:{:02d}:{:02d}".format(h, m, s)
 
 ########## Programme principal ###################
-class FiltrationPiscine(hass.Hass): 
+class FiltrationPiscine(hass.Hass):
+
+    logger = None
+
     def initialize(self):
         global JOURNAL, DUREE_TEMPO, FIN_TEMPO
-        message_notification= "Initialisation AppDaemon Filtration Piscine."
-        self.notification(message_notification,0)
+        
+        self.set_log_level_from_args()
+        self.logger = self.get_main_log()
+
+        self.logger.info("Initialisation AppDaemon Filtration Piscine.")
         self.log(message_notification, log="error_log")
-        self.notification("Journal Notif niveau:"+str(JOURNAL),0)
+
         self.listen_state(self.change_temp,self.args["temperature_eau"])
         self.listen_state(self.change_mode,self.args["mode_de_fonctionnement"])
         self.listen_state(self.change_coef,self.args["coef"])
@@ -72,11 +78,20 @@ class FiltrationPiscine(hass.Hass):
         # Arret de la pompe sur initalisation
         self.turn_off(self.args["cde_pompe"])
 
+    def set_log_level_from_args(self):
+        """
+        Defines the log level based on app parameter 'log_level'.
+        """
+        log_level: str = self.args.get('log_level', None)
+        if log_level:
+            self.set_log_level(log_level)
+            self.log(f'Journal - niveau de notification: {log_level}')
+        
 # Appelé sur changement de temperature
     def change_temp(self, entity, attribute, old, new, kwargs):
         global JOURNAL
         if new!= "unavailable":
-            self.notification('Appel traitement changement Temp.',2)
+            self.info('Appel traitement suite à un changement de température.')
             self.traitement(kwargs)
 
 # Appelé sur changement de mode de fonctionnement
