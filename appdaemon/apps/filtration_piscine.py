@@ -32,7 +32,6 @@ class FiltrationPiscine(hass.Hass):
     def initialize(self):
         global FIN_TEMPO
 
-        self.set_log_level_from_args()
         self.logger = self.get_main_log()
 
         self.logger.info("Initialisation AppDaemon Filtration Piscine.")
@@ -52,15 +51,6 @@ class FiltrationPiscine(hass.Hass):
         self.tempo = self.run_in(self.fin_temporisation_mesure_temp, DUREE_TEMPO, entité=self.args["cde_pompe"])
         FIN_TEMPO = False        # Arret de la pompe sur initalisation
         self.turn_off(self.args["cde_pompe"])
-
-    def set_log_level_from_args(self):
-        """
-        Defines the log level based on app parameter 'log_level'.
-        """
-        log_level: str = self.args.get('log_level', None)
-        if log_level:
-            self.set_log_level(log_level)
-            self.log(f'Journal - niveau de notification: {log_level}')
 
     @staticmethod
     def duree_classique(temperature_eau: str):
