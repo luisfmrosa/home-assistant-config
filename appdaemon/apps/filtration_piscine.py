@@ -311,7 +311,7 @@ class FiltrationPiscine(hass.Hass):
             self.logger.info(f"Nb h_avant_t: {h_avant_t}/Nb h_apres_t: {h_apres_t}/Nb h_total_t: {h_total_t}")
             self.logger.info(f"h_debut: {h_debut}/h_pivot: {h_pivot}/h_fin: {h_fin}")
             # Affichage plage horaire
-            affichage_texte = f"{str(h_debut)[:5]:0>5}/{str(h_pivot)[:5]:0>5}/{str(h_fin)[:5]:0>5}"
+            affichage_texte = f"{str(h_debut).zfill(8)[:5]}/{str(h_pivot).zfill(8)[:5]}/{str(h_fin).zfill(8)[:5]}"
             self.set_textvalue(periode_filtration, affichage_texte)
             # Ajouté le 30 mai 2022
             self.set_value("input_number.duree_filtration_ete", round(temps_filtration, 2))
@@ -334,7 +334,7 @@ class FiltrationPiscine(hass.Hass):
             duree_t = timedelta(hours=int(duree_h[:2]), minutes=int(duree_h[3:5]))
             h_fin_f = h_debut_t + duree_t
             # Affichage plage horaire
-            affichage_texte = f"{str(h_debut_h)[:5]:0>5}/{str(h_fin_f)[:5]:0>5}"
+            affichage_texte = f"{str(h_debut_h).zfill(8)[:5]}/{str(h_fin_f).zfill(8)[:5]}"
             self.set_textvalue(periode_filtration, affichage_texte)
 
             self.logger.debug(f"h_debut_h: {h_debut_h}, Duree H: {duree_h}, H_fin: {h_fin_f}")
