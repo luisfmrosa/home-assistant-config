@@ -65,7 +65,7 @@ class FiltrationPiscine(hass.Hass):
         # initialisation de la temporisation avant recopie temperature
         self.duree_tempo = float(self.get_state(self.args["tempo_eau"]))
         self.logger.info(f"Duree tempo: {self.duree_tempo}")
-        self.tempo = self.run_in(self.fin_temporisation_mesure_temp, self.duree_tempo, entité=self.args["cde_pompe"])
+        self.tempo = self.run_in(self.fin_temporisation_mesure_temp, self.duree_tempo)
         self.fin_tempo = False        # Arret de la pompe sur initalisation
         self.turn_off(self.args["cde_pompe"])
 
@@ -237,7 +237,6 @@ class FiltrationPiscine(hass.Hass):
         :return: NoReturn.
         """
         self.logger.debug('Démarrage traitement...')
-        h_locale = time.strftime('%H:%M:%S', time.localtime())
         mesure_temperature_eau = float(self.get_state(self.args["temperature_eau"]))
         mem_temperature_eau = float(self.get_state(self.args["mem_temp"]))
         mode_de_fonctionnement = self.get_state(self.args["mode_de_fonctionnement"])
