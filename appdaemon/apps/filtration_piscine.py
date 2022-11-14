@@ -367,16 +367,6 @@ class FiltrationPiscine(hass.Hass):
         :return: NoReturn.
         """
         self.logger.debug('Démarrage traitement...')
-        mode_de_fonctionnement = self.get_state(self.args["mode_de_fonctionnement"])
-        self.logger.debug(f"Mode de fonctionnement: {mode_de_fonctionnement}")
-        #  Recupération du mode de fonctionnement
-        marche_pompe: bool = False
-        try:
-            action: Callable[[], bool] = self.get_mode_action(mode_de_fonctionnement)
-            marche_pompe = action()
-        except UnknownModeError:
-            self.logger.warning(f"Mode de fonctionnement Piscine Inconnu: {mode_de_fonctionnement}")
-
         # Calcul sortie commande pompe filtration
         # Arrêt pompe sur arrêt forcé
         arret_force = self.get_state(self.args["arret_force"])
@@ -387,6 +377,16 @@ class FiltrationPiscine(hass.Hass):
             periode_filtration = self.args["periode_filtration"]
             self.set_textvalue(periode_filtration, "At delestage")
         else:
+            mode_de_fonctionnement: str = self.get_state(self.args["mode_de_fonctionnement"])
+            self.logger.debug(f"Mode de fonctionnement: {mode_de_fonctionnement}")
+            #  Recupération du mode de fonctionnement
+            marche_pompe: bool = False
+            try:
+                action: Callable[[], bool] = self.get_mode_action(mode_de_fonctionnement)
+                marche_pompe = action()
+            except UnknownModeError:
+                self.logger.warning(f"Mode de fonctionnement Piscine Inconnu: {mode_de_fonctionnement}")
+
             if marche_pompe:
                 self.turn_on(pompe)
                 self.logger.info("Marche Pompe")
