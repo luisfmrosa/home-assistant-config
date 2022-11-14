@@ -269,12 +269,12 @@ class FiltrationPiscine(hass.Hass):
         Action pour mode de fonctionnement 'Ete'.
         :return: bool fonctionnement de la pompe: True pour 'on', False pour 'off'.
         """
-        mesure_temperature_eau = float(self.get_state(self.args["temperature_eau"]))
-        mem_temperature_eau = float(self.get_state(self.args["mem_temp"]))
-        coef = float(self.get_state(self.args["coef"])) / 100
-        mode_calcul = self.get_state(self.args["mode_calcul"])
-        periode_filtration = self.args["periode_filtration"]
-        pivot = self.get_state(self.args["h_pivot"])
+        mesure_temperature_eau: float = float(self.get_state(self.args["temperature_eau"]))
+        mem_temperature_eau: float = float(self.get_state(self.args["mem_temp"]))
+        coef: float = float(self.get_state(self.args["coef"])) / 100
+        mode_calcul: str = self.get_state(self.args["mode_calcul"])
+        periode_filtration: str = self.args["periode_filtration"]
+        pivot: str = self.get_state(self.args["h_pivot"])
 
         # Flag FIN_TEMPO
         self.logger.debug(f"Flag fin tempo: {self.fin_tempo}")
@@ -283,10 +283,10 @@ class FiltrationPiscine(hass.Hass):
         # Sinon, on travaille avec la mémoire de la temperature avant arrêt de la pompe
         # mémorisée la veille.
         if self.fin_tempo:
-            temperature_eau = mesure_temperature_eau
+            temperature_eau: float = mesure_temperature_eau
             self.set_value(self.args["mem_temp"], mesure_temperature_eau)
         else:
-            temperature_eau = mem_temperature_eau
+            temperature_eau: float = mem_temperature_eau
 
         temps_filtration = (self.duree_abaque(temperature_eau) if mode_calcul == 'on'
                             else self.duree_classique(temperature_eau)) * coef
@@ -317,30 +317,28 @@ class FiltrationPiscine(hass.Hass):
         self.set_value("input_number.duree_filtration_ete", round(temps_filtration, 2))
         # fin ajout
         # Marche pompe si dans plage horaire sinon Arret
-        marche_pompe: bool = self.now_is_between(str(h_debut), str(h_fin))
-        return marche_pompe
+        return self.now_is_between(str(h_debut), str(h_fin))
 
     def mode_hiver(self) -> bool:
         """
         Action pour mode de fonctionnement 'Hiver'.
         :return: bool fonctionnement de la pompe: True pour 'on', False pour 'off'.
         """
-        h_debut_h = self.get_state(self.args["h_debut_hiver"])
-        h_debut_t = timedelta(hours=int(h_debut_h[:2]), minutes=int(h_debut_h[3:5]), seconds=int(h_debut_h[6:8]))
+        h_debut_h: str = self.get_state(self.args["h_debut_hiver"])
+        h_debut_t: timedelta = timedelta(hours=int(h_debut_h[:2]), minutes=int(h_debut_h[3:5]), seconds=int(h_debut_h[6:8]))
 
-        duree = self.get_state(self.args["duree_hiver"])
-        duree_t = timedelta(hours=duree)
+        duree: float = float(self.get_state(self.args["duree_hiver"]))
+        duree_t: timedelta = timedelta(hours=duree)
 
-        h_fin = h_debut_t + duree_t
+        h_fin: timedelta = h_debut_t + duree_t
         # Affichage plage horaire
-        periode_filtration = self.args["periode_filtration"]
+        periode_filtration: str = self.args["periode_filtration"]
         affichage_texte = f"{str(h_debut_h).zfill(8)[:5]}/{str(h_fin).zfill(8)[:5]}"
         self.set_textvalue(periode_filtration, affichage_texte)
 
         self.logger.debug(f"h_debut_h: {h_debut_t}, Duree H: {duree_t}, H_fin: {h_fin}")
         # Marche pompe si dans plage horaire sinon Arret
-        marche_pompe: bool = self.now_is_between(str(h_debut_h), str(h_fin))
-        return marche_pompe
+        return self.now_is_between(str(h_debut_h), str(h_fin))
 
     def mode_at_force(self) -> bool:
         """
