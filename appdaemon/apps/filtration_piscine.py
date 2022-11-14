@@ -8,7 +8,6 @@ import hassapi as hass
 # Saisir ici les memes modes que dans HA 
 TAB_MODE = ["Ete", "Hiver", "At F", "Ma F"]
 
-# TODO: remplacer en_heure (str) par des timedelta
 # TODO: généraliser la gestion des modes de fonctionnement (une fonction pour chaque mode)
 
 
@@ -68,7 +67,7 @@ class FiltrationPiscine(hass.Hass):
         self.turn_off(self.args["cde_pompe"])
 
     @staticmethod
-    def duree_classique(temperature_eau: str):
+    def duree_classique(temperature_eau: float):
         """
         Fonction de calcul du temps de filtration "Classique":
 
@@ -80,12 +79,12 @@ class FiltrationPiscine(hass.Hass):
         :return: la durée de filtration.
         """
         # Methode classique temperature / 2
-        temperature_min: float = max(float(temperature_eau), 10)
+        temperature_min: float = max(temperature_eau, 10)
         duree = temperature_min / 2
-        duree_m = min(float(duree), 23)
+        duree_m = min(duree, 23)
         return duree_m
 
-    def duree_abaque(self, temperature_eau: str) -> float:
+    def duree_abaque(self, temperature_eau: float) -> float:
         """
         Fonction de calcul de la durée de filtration selon un abacus.
         La formule:
@@ -99,7 +98,7 @@ class FiltrationPiscine(hass.Hass):
         :param temperature_eau: temperature de l'eau de la piscine.
         :return: float la durée de filtration calculée.
         """
-        temperature_min: float = max(float(temperature_eau), 10)
+        temperature_min: float = max(temperature_eau, 10)
         duree = (
                 self.abaque_a * temperature_min ** 3
                 + self.abaque_b * temperature_min ** 2
@@ -107,23 +106,6 @@ class FiltrationPiscine(hass.Hass):
                 + self.abaque_d
         )
         return duree
-
-    @staticmethod
-    def en_heure(t):
-        """
-        Fonction de Conversion d'heures (int) en heure "HH:MM:SS".
-        :param t: un entier représentant l'heure.
-        :return: l'heure en format "HH:MM:SS".
-        """
-        # TODO: etudier comment remplacer cette conversion par un simple timedelta()
-        h = int(t)
-        # On retire les heures pour ne garder que les minutes.
-        t = (t - h) * 60  # 0.24 * 60 = temps_restant en minutes.
-        m = int(t)
-        # On retire les minutes pour ne garder que les secondes.
-        t = (t - m) * 60
-        s = int(t)
-        return f"{h:02d}:{m:02d}:{s:02d}"
 
     def change_temp(self, entity, attribute, old, new, kwargs):
         """
@@ -274,41 +256,30 @@ class FiltrationPiscine(hass.Hass):
         else:
             temperature_eau = mem_temperature_eau
 
+        self.logger.debug(f"Mode de fonctionnement: {mode_de_fonctionnement}")
         #  Mode Ete
         if mode_de_fonctionnement == TAB_MODE[0]:
+            temps_filtration = (self.duree_abaque(temperature_eau) if mode_calcul == 'on'
+                                else self.duree_classique(temperature_eau)) * coef
 
-            if mode_calcul == "on":  # Calcul selon Abaque
-                temps_filtration = (self.duree_abaque(temperature_eau)) * coef
-                nb_h_avant = self.en_heure(float(temps_filtration / 2))
-                nb_h_apres = self.en_heure(float(temps_filtration / 2))
-                # nb_h_avant = en_heure(float(temps_filtration / 3)) Répartition 1/3-2/3
-                # nb_h_apres = en_heure(float(temps_filtration / 3*2))
-                nb_h_total = self.en_heure(float(temps_filtration))
-                self.logger.debug(f"Durée de Filtration Mode Abaque: {temps_filtration} h")
+            self.logger.debug(f"Température Eau: {temperature_eau} / Coéficient de filtration: {coef}")
+            self.logger.debug(f"Durée de Filtration (Mode {'Abaque'if mode_calcul == 'on' else 'Classique'}): "
+                              f"{temps_filtration} h")
 
-            else:  # Calcul selon méthode classique
-                temps_filtration = (self.duree_classique(temperature_eau)) * coef
-                nb_h_avant = self.en_heure(float(temps_filtration / 2))
-                nb_h_apres = self.en_heure(float(temps_filtration / 2))
-                nb_h_total = self.en_heure(float(temps_filtration))
-                self.logger.debug(f"Durée de Filtration Mode Classique: {temps_filtration} h")
+            # conversion en timedelta pour simplifier la vie
+            h_temps_filtration = timedelta(hours=temps_filtration)
+            h_mi_temps_filtration = h_temps_filtration / 2
 
-            # Calcul des heures de début et fin filtration en fontion
-            # du temps de filtration avant et apres l'heure pivot
-            # Adapte l'heure de début de filtration à l'heure actuelle
-            # Limitation de la fin de filtration à 23:59:59
-            h_maintenant = timedelta(hours=int(h_locale[:2]), minutes=int(h_locale[3:5]), seconds=int(h_locale[6:8]))
+            # Calcul des heures de début et fin filtration en fonction
+            # du temps de filtration avant et après l'heure pivot
             h_pivot = timedelta(hours=int(pivot[:2]), minutes=int(pivot[3:5]))
-            h_avant_t = timedelta(hours=int(nb_h_avant[:2]), minutes=int(nb_h_avant[3:5]), seconds=int(nb_h_avant[6:8]))
-            h_apres_t = timedelta(hours=int(nb_h_apres[:2]), minutes=int(nb_h_apres[3:5]), seconds=int(nb_h_apres[6:8]))
-            h_total_t = timedelta(hours=int(nb_h_total[:2]), minutes=int(nb_h_total[3:5]), seconds=int(nb_h_total[6:8]))
-            h_max_t = timedelta(hours=23, minutes=59, seconds=59)
 
-            h_debut = h_pivot - h_avant_t
-            h_fin = h_pivot + h_apres_t
+            h_debut = h_pivot - h_mi_temps_filtration
+            # Limitation de la fin de filtration à 23:59:59
+            h_max = timedelta(hours=23, minutes=59, seconds=59)
+            h_fin = min(h_pivot + h_mi_temps_filtration, h_max)
 
-            h_fin = min(h_fin, h_max_t)
-            self.logger.info(f"Nb h_avant_t: {h_avant_t}/Nb h_apres_t: {h_apres_t}/Nb h_total_t: {h_total_t}")
+            self.logger.info(f"Mi temps: {h_mi_temps_filtration}/Total Filtration: {h_temps_filtration}")
             self.logger.info(f"h_debut: {h_debut}/h_pivot: {h_pivot}/h_fin: {h_fin}")
             # Affichage plage horaire
             affichage_texte = f"{str(h_debut).zfill(8)[:5]}/{str(h_pivot).zfill(8)[:5]}/{str(h_fin).zfill(8)[:5]}"
@@ -319,27 +290,22 @@ class FiltrationPiscine(hass.Hass):
             # Marche pompe si dans plage horaire sinon Arret
             marche_pompe: bool = self.now_is_between(str(h_debut), str(h_fin))
 
-            # Notifications de debug
-            self.logger.debug(f"Mode de fonctionnement: {mode_de_fonctionnement}")
-            self.logger.debug(f"Température Eau = {temperature_eau}")
-            self.logger.debug(f"h_pivot = {pivot}")
-            self.logger.debug(f"Coefficient = {coef}")
-
         #  Mode hiver Heure de Début + Une durée en h 
         elif mode_de_fonctionnement == TAB_MODE[1]:
             h_debut_h = self.get_state(self.args["h_debut_hiver"])
-            duree = self.get_state(self.args["duree_hiver"])
-            duree_h = self.en_heure(float(duree))
             h_debut_t = timedelta(hours=int(h_debut_h[:2]), minutes=int(h_debut_h[3:5]), seconds=int(h_debut_h[6:8]))
-            duree_t = timedelta(hours=int(duree_h[:2]), minutes=int(duree_h[3:5]))
-            h_fin_f = h_debut_t + duree_t
+
+            duree = self.get_state(self.args["duree_hiver"])
+            duree_t = timedelta(hours=duree)
+
+            h_fin = h_debut_t + duree_t
             # Affichage plage horaire
-            affichage_texte = f"{str(h_debut_h).zfill(8)[:5]}/{str(h_fin_f).zfill(8)[:5]}"
+            affichage_texte = f"{str(h_debut_h).zfill(8)[:5]}/{str(h_fin).zfill(8)[:5]}"
             self.set_textvalue(periode_filtration, affichage_texte)
 
-            self.logger.debug(f"h_debut_h: {h_debut_h}, Duree H: {duree_h}, H_fin: {h_fin_f}")
+            self.logger.debug(f"h_debut_h: {h_debut_t}, Duree H: {duree_t}, H_fin: {h_fin}")
             # Marche pompe si dans plage horaire sinon Arret
-            marche_pompe = self.now_is_between(str(h_debut_h), str(h_fin_f))
+            marche_pompe = self.now_is_between(str(h_debut_h), str(h_fin))
 
         # Mode Arret Forcé
         elif mode_de_fonctionnement == TAB_MODE[2]:
