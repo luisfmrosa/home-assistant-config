@@ -16,6 +16,9 @@ class FiltrationPiscine(hass.Hass):
     Classe Appdeamon de gestion de la piscine.
     Cette classe gère le temps de filtration de la piscine selon plusieurs modes
     (été, hiver, marche forcée, arrêt forcée, ...).
+
+    Version d'origine: https://github.com/remycrochon/home-assistant/blob/master/appdaemon/apps/filtration_piscine.py
+
     """
     # variables de classes : elles sont 'globales' à toutes les instances de la classe
     # logger instance for main_log (piscine_log)
