@@ -50,24 +50,25 @@ class FiltrationPiscine(hass.Hass):
 
         self.logger.info("Initialisation AppDaemon Filtration Piscine.")
 
+        # initialisation de la temporisation avant recopie temperature
+        self.fin_tempo = False
+        # Arret de la pompe sur initalisation
+        self.turn_off(self.args["cde_pompe"])
+
         self.listen_state(self.change_temp, self.args["temperature_eau"])
         self.listen_state(self.change_mode, self.args["mode_de_fonctionnement"])
         self.listen_state(self.change_coef, self.args["coef"])
         self.listen_state(self.ecretage_h_pivot, self.args["h_pivot"])
         self.listen_state(self.change_mode_calcul, self.args["mode_calcul"])
-        self.listen_state(self.change_etat_pompe, self.args["cde_pompe"])
+        self.listen_state(self.raz_temporisation_mesure_temp, self.args["cde_pompe"], new_state="off")
+        self.listen_state(self.fin_temporisation_mesure_temp, self.args["cde_pompe"], new_state="on",
+                          duration=float(self.get_state(self.args["tempo_eau"])))
+        self.listen_state(self.change_tempo_circulation_eau, self.args["tempo_eau"])
         self.listen_state(self.change_arret_force, self.args["arret_force"])
 
         # Lance le traitement a chaque self.intervale_minutes (minutes)
         self.logger.debug(f'Ajout temporisateur pour exécuter le traitement toutes les {self.intervale_minutes} min.')
         self.run_every(self.traitement, "now", self.intervale_minutes * 60)
-
-        # initialisation de la temporisation avant recopie temperature
-        self.duree_tempo = float(self.get_state(self.args["tempo_eau"]))
-        self.logger.info(f"Duree tempo: {self.duree_tempo}")
-        self.tempo = self.run_in(self.fin_temporisation_mesure_temp, self.duree_tempo)
-        self.fin_tempo = False        # Arret de la pompe sur initalisation
-        self.turn_off(self.args["cde_pompe"])
 
     @staticmethod
     def duree_classique(temperature_eau: float):
@@ -161,7 +162,7 @@ class FiltrationPiscine(hass.Hass):
         :param kwargs: remaining arguments.
         :return: NoReturn
         """
-        self.notification('Appel traitement changement mode de calcul.', 2)
+        self.logger.debug('Appel traitement changement mode de calcul.')
         self.traitement(kwargs)
 
     # Appelé sur changement arret forcé
@@ -178,28 +179,14 @@ class FiltrationPiscine(hass.Hass):
         self.logger.debug('Appel traitement sur arret force.')
         self.traitement(kwargs)
 
-    def change_etat_pompe(self, entity, attribute, old, new, kwargs):
+    def raz_temporisation_mesure_temp(self, kwargs):
         """
-        Méthode appelée sur changement d'état de la pompe de filtrage.
-        :param entity: entity affected.
-        :param attribute: entity attribute.
-        :param old: entity old value.
-        :param new: entity new value.
-        :param kwargs: remaining arguments.
-        :return: NoReturn
+        Méthode appelée sur changement d'état de la pompe de filtrage de 'on' à 'off'.
+        :param kwargs:
+        :return:
         """
         self.fin_tempo = False
-        if new == "on":
-            self.logger.debug(f"Etat pompe changé à 'on': appel à fin temporisation dans {self.duree_tempo}")
-            self.tempo = self.run_in(self.fin_temporisation_mesure_temp, self.duree_tempo)
-        else:
-            self.logger.debug(f"Etat pompe changé à '{new}': arrêt temporisateur {self.tempo}")
-            if self.tempo is not None:
-                self.tempo = self.cancel_timer(self.tempo)
-                self.logger.debug(f"self.tempo après arrêt tempo': {self.tempo}")
-
-        # self.logger.debug('Appel traitement changement etat pompe.')
-        # self.traitement(kwargs)
+        self.logger.debug(f'Remise à zero temporisation circulation temp. Flag fin tempo: {self.fin_tempo}')
 
     def fin_temporisation_mesure_temp(self, kwargs):
         """
@@ -208,8 +195,7 @@ class FiltrationPiscine(hass.Hass):
         :return:
         """
         self.fin_tempo = True
-        self.logger.debug('Fin temporisation circulation eau.')
-        # self.traitement(kwargs)
+        self.logger.debug(f'Fin temporisation circulation eau. Flag fin tempo: {self.fin_tempo}')
 
     def ecretage_h_pivot(self, entity, attribute, old, new, kwargs):
         """
@@ -230,6 +216,20 @@ class FiltrationPiscine(hass.Hass):
             self.set_state(self.args["h_pivot"], state=h_pivot_min)
         self.traitement(kwargs)
 
+    def change_tempo_circulation_eau(self, entity, attribute, old, new, kwargs):
+        """
+        Appelée sur changement temporisation circulation eau.
+        :param entity:
+        :param attribute:
+        :param old:
+        :param new:
+        :param kwargs:
+        :return:
+        """
+        self.fin_tempo = False
+        self.logger.debug(f'Appel changement tempo circulation eau. Flag fin tempo: {self.fin_tempo}')
+        self.initialize()
+
     def traitement(self, kwargs):
         """
         Traitement de calcul de la température.
@@ -248,9 +248,10 @@ class FiltrationPiscine(hass.Hass):
         periode_filtration = self.args["periode_filtration"]
 
         # Flag FIN_TEMPO
-        self.logger.debug(f"Flag fin tempo = {self.fin_tempo}")
+        self.logger.debug(f"Flag fin tempo: {self.fin_tempo}")
         # Temporisation avant prise en compte de la mesure de la temperature
-        # sinon on travaille avec la memoire de la temperature avant arrêt de la pompe
+        self.logger.debug(f"Durée tempo recirculation: {float(self.get_state(self.args['tempo_eau']))}")
+        # Sinon, on travaille avec la mémoire de la temperature avant arrêt de la pompe
         # mémorisée la veille.
         if self.fin_tempo:
             temperature_eau = mesure_temperature_eau
