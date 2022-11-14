@@ -61,10 +61,10 @@ class FiltrationPiscine(hass.Hass):
         self.turn_off(self.args["cde_pompe"])
 
         # enregistre les modes de fonctionnement connus
-        self.registre_mode_action('Ete', self.mode_ete)
-        self.registre_mode_action('Hiver', self.mode_hiver)
-        self.registre_mode_action('At F', self.mode_at_force)
-        self.registre_mode_action('Ma F', self.mode_ma_force)
+        self.registrer_mode_action('Ete', self.mode_ete)
+        self.registrer_mode_action('Hiver', self.mode_hiver)
+        self.registrer_mode_action('At F', self.mode_at_force)
+        self.registrer_mode_action('Ma F', self.mode_ma_force)
 
         # définie les actions à exécuter si changement dans variables
         self.listen_state(self.change_temp, self.args["temperature_eau"])
