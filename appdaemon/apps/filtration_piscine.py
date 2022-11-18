@@ -358,6 +358,47 @@ class FiltrationPiscine(hass.Hass):
         self.set_textvalue(periode_filtration, "Ma manuel")
         return True
 
+    def calculer_etat_pompe(self) -> bool:
+        """
+        Calcule l'etat de la pompe selon le flag marche forcée et le mode de fonctionnement.
+        :return: bool True si marche, False si arrêt pompe.
+        """
+        self.logger.debug("Calcul de l'état de la pompe...")
+        # Calcul sortie commande pompe filtration
+        marche_pompe: bool = False
+        # Arrêt pompe sur arrêt forcé
+        arret_force = self.get_state(self.args["arret_force"])
+
+        if arret_force == "on":
+            # marche_pompe est déjà à False ...
+            self.logger.info("Arrêt par Deléstage (Forcé)")
+            self.set_textvalue(self.args["periode_filtration"], "At delestage")
+        else:
+            mode_de_fonctionnement: str = self.get_state(self.args["mode_de_fonctionnement"])
+            self.logger.debug(f"Mode de fonctionnement: {mode_de_fonctionnement}")
+            #  Recupération et exécution de l'action associée au mode de fonctionnement
+            try:
+                action: Callable[[], bool] = self.get_mode_action(mode_de_fonctionnement)
+                marche_pompe = action()
+            except UnknownModeError:
+                self.logger.warning(f"Mode de fonctionnement Piscine Inconnu: {mode_de_fonctionnement}")
+
+        return marche_pompe
+
+    def piloter_pompe_selon_etat(self, marche_pompe: bool) -> NoReturn:
+        """
+        Démarre ou arrête la pompe selon l'état fourni.
+        :param marche_pompe: bool True pour démarrer, False pour arrêter.
+        :return: NoReturn
+        """
+        pompe: str = self.args["cde_pompe"]
+        if marche_pompe:
+            self.turn_on(pompe)
+            self.logger.info("Marche Pompe")
+        else:
+            self.turn_off(pompe)
+            self.logger.info("Arrêt Pompe")
+
     def traitement(self, kwargs):
         """
         Traitement de calcul de la température.
@@ -365,31 +406,6 @@ class FiltrationPiscine(hass.Hass):
         :return: NoReturn.
         """
         self.logger.debug('Démarrage traitement...')
-        # Calcul sortie commande pompe filtration
-        # Arrêt pompe sur arrêt forcé
-        arret_force = self.get_state(self.args["arret_force"])
-        pompe = self.args["cde_pompe"]
-        if arret_force == "on":
-            self.turn_off(pompe)
-            self.logger.info("Arrêt par Deléstage (Forcé)")
-            periode_filtration = self.args["periode_filtration"]
-            self.set_textvalue(periode_filtration, "At delestage")
-        else:
-            mode_de_fonctionnement: str = self.get_state(self.args["mode_de_fonctionnement"])
-            self.logger.debug(f"Mode de fonctionnement: {mode_de_fonctionnement}")
-            #  Recupération du mode de fonctionnement
-            marche_pompe: bool = False
-            try:
-                action: Callable[[], bool] = self.get_mode_action(mode_de_fonctionnement)
-                marche_pompe = action()
-            except UnknownModeError:
-                self.logger.warning(f"Mode de fonctionnement Piscine Inconnu: {mode_de_fonctionnement}")
-
-            if marche_pompe:
-                self.turn_on(pompe)
-                self.logger.info("Marche Pompe")
-            else:
-                self.turn_off(pompe)
-                self.logger.info("Arrêt Pompe")
-
+        marche_pompe: bool = self.calculer_etat_pompe()
+        self.piloter_pompe_selon_etat(marche_pompe)
         self.logger.debug('Fin traitement.')
