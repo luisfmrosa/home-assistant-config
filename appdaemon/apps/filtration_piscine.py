@@ -145,7 +145,7 @@ class FiltrationPiscine(hass.Hass):
         )
         return duree
 
-    def change_temp(self, entity, attribute, old, new, kwargs):
+    def change_temp(self, entity, attribute, old, new, **kwargs):
         """
         Méthode appelée sur changement de temperature.
         :param entity: entity affected.
@@ -159,7 +159,7 @@ class FiltrationPiscine(hass.Hass):
             self.logger.debug('Appel traitement suite à un changement de température.')
             self.traitement(kwargs)
 
-    def change_mode(self, entity, attribute, old, new, kwargs):
+    def change_mode(self, entity, attribute, old, new, **kwargs):
         """
         Méthode appelée sur changement de mode de fonctionnement.
         :param entity: entity affected.
@@ -173,7 +173,7 @@ class FiltrationPiscine(hass.Hass):
         self.logger.debug('Appel traitement changement Mode.')
         self.traitement(kwargs)
 
-    def change_coef(self, entity, attribute, old, new, kwargs):
+    def change_coef(self, entity, attribute, old, new, **kwargs):
         """
         Méthode appelée sur changement de coefficient.
         :param entity: entity affected.
@@ -186,7 +186,7 @@ class FiltrationPiscine(hass.Hass):
         self.logger.debug('Appel traitement changement Coef.')
         self.traitement(kwargs)
 
-    def change_mode_calcul(self, entity, attribute, old, new, kwargs):
+    def change_mode_calcul(self, entity, attribute, old, new, **kwargs):
         """
         Méthode appelée sur changement de mode de calcul.
         :param entity: entity affected.
@@ -200,7 +200,7 @@ class FiltrationPiscine(hass.Hass):
         self.traitement(kwargs)
 
     # Appelé sur changement arret forcé
-    def change_arret_force(self, entity, attribute, old, new, kwargs):
+    def change_arret_force(self, entity, attribute, old, new, **kwargs):
         """
         Méthode appelée sur changement arrêt forcé.
         :param entity: entity affected.
@@ -213,7 +213,7 @@ class FiltrationPiscine(hass.Hass):
         self.logger.debug('Appel traitement sur arret force.')
         self.traitement(kwargs)
 
-    def raz_temporisation_mesure_temp(self, kwargs):
+    def raz_temporisation_mesure_temp(self, **kwargs):
         """
         Méthode appelée sur changement d'état de la pompe de filtrage de 'on' à 'off'.
         :param kwargs:
@@ -222,7 +222,7 @@ class FiltrationPiscine(hass.Hass):
         self.fin_tempo = False
         self.logger.debug(f'Remise à zero temporisation circulation temp. Flag fin tempo: {self.fin_tempo}')
 
-    def fin_temporisation_mesure_temp(self, kwargs):
+    def fin_temporisation_mesure_temp(self, **kwargs):
         """
         Méthode appelée sur fin temporisation suite au démarrage de la pompe.
         :param kwargs: liste des arguments.
@@ -231,7 +231,7 @@ class FiltrationPiscine(hass.Hass):
         self.fin_tempo = True
         self.logger.debug(f'Fin temporisation circulation eau. Flag fin tempo: {self.fin_tempo}')
 
-    def ecretage_h_pivot(self, entity, attribute, old, new, kwargs):
+    def ecretage_h_pivot(self, entity, attribute, old, new, **kwargs):
         """
         Méthode appelée pour écrétage heure pivot entre h_pivot_min et h_pivot_max.
         :param entity: entity affected.
@@ -250,7 +250,7 @@ class FiltrationPiscine(hass.Hass):
             self.set_state(self.args["h_pivot"], state=h_pivot_min)
         self.traitement(kwargs)
 
-    def change_tempo_circulation_eau(self, entity, attribute, old, new, kwargs):
+    def change_tempo_circulation_eau(self, entity, attribute, old, new, **kwargs):
         """
         Appelée sur changement temporisation circulation eau.
         :param entity:
