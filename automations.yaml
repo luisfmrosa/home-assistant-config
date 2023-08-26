@@ -191,7 +191,7 @@
     les seuils 1 (marche 15 min) ou 2 (marche 30 min).
   trigger:
   - platform: time_pattern
-    hours: '1'
+    hours: /1
   - platform: state
     entity_id: input_boolean.hors_gel_valid
     id: hg_deval
@@ -202,7 +202,7 @@
   - choose:
     - conditions:
       - condition: numeric_state
-        entity_id: sensor.lumi_lumi_weather_6fa6f207_temperature
+        entity_id: sensor.lumi_lumi_weather_temperature_2
         below: input_number.hors_gel_inf_seuil2
       - condition: state
         entity_id: input_select.mode_fonctionnement_piscine
@@ -236,7 +236,7 @@
           message: '{{states("sensor.date_time") }}'
     - conditions:
       - condition: numeric_state
-        entity_id: sensor.lumi_lumi_weather_6fa6f207_temperature
+        entity_id: sensor.lumi_lumi_weather_temperature_2
         below: input_number.hors_gel_inf_seuil1
       - condition: state
         entity_id: input_select.mode_fonctionnement_piscine
@@ -283,3 +283,35 @@
           message: '{{states("sensor.date_time") }}'
   mode: restart
   max: 10
+- id: '1688076739539'
+  alias: Associate switch button1-lampe_ancienne
+  description: Un short press on switch.2buttons (button 1) toggles "lampe ancienne".
+  trigger:
+  - device_id: 3ab9c428743d0b8a5c6a42a425ec26d7
+    domain: zha
+    platform: device
+    type: remote_button_short_press
+    subtype: button_1
+  condition: []
+  action:
+  - type: toggle
+    device_id: 1d7d7e31fc798167e1b738f78c62d888
+    entity_id: switch.prise_lampe_ancienne_on_off
+    domain: switch
+  mode: single
+- id: '1688076926078'
+  alias: Associate switch.2buttons-"prise ventilateur"
+  description: Pressing switch.2buttons (button 2) toggles prise ventilateur.
+  trigger:
+  - device_id: 3ab9c428743d0b8a5c6a42a425ec26d7
+    domain: zha
+    platform: device
+    type: remote_button_short_press
+    subtype: button_2
+  condition: []
+  action:
+  - type: toggle
+    device_id: 57d06ece0d720e540cf89f953a317a44
+    entity_id: switch.prise_ventilateur_on_off
+    domain: switch
+  mode: single
