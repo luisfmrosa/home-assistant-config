@@ -1,5 +1,5 @@
 ---
-secrets: /config/secrets.yaml
+secrets: /homeassistant/secrets.yaml
 appdaemon:
   latitude: !secret latitude
   longitude: !secret longitude
@@ -18,13 +18,13 @@ hadashboard:
 logs:
   main_log:
     filename: /config/logs/appdaemon.log
-    
+
   access_log:
     filename: /config/logs/access.log
 
   error_log:
     filename: /config/logs/error.log
-  
+
   piscine_log:
     name: PiscineLog
     filename: /config/logs/piscine.log

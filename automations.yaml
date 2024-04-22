@@ -315,3 +315,60 @@
     entity_id: switch.prise_ventilateur_on_off
     domain: switch
   mode: single
+- id: '1711271735265'
+  alias: Notificação se fumaça
+  description: ''
+  trigger:
+  - type: smoke
+    platform: device
+    device_id: dbefe97d57c39d2a3af0c4bc082a16ec
+    entity_id: e97ad31699d24775150ed51ad50f4031
+    domain: binary_sensor
+  condition: []
+  action:
+  - service: notify.notify
+    metadata: {}
+    data:
+      title: Alerta fumaça
+      message: Fumaça detectada na cozinha
+  mode: single
+- id: '1711275724234'
+  alias: Notifier si chauffe-serviettes allumé
+  description: ''
+  trigger:
+  - type: power
+    platform: device
+    device_id: 45d4c955aff7e541b11bf5592ddd5c8f
+    entity_id: 2a1e6f1dca7121efde8452ef29a371d3
+    domain: sensor
+    above: 100
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+  condition: []
+  action:
+  - service: notify.notify
+    metadata: {}
+    data:
+      message: Chauffe-serviettes sdb haut allumé !
+      title: Alerte consommation
+  mode: single
+- id: '1711276410787'
+  alias: Notifier chauffe-serviettes sdb haut éteint
+  description: Chauffe-serviettes sdb haut éteint.
+  trigger:
+  - type: power
+    platform: device
+    device_id: 45d4c955aff7e541b11bf5592ddd5c8f
+    entity_id: 2a1e6f1dca7121efde8452ef29a371d3
+    domain: sensor
+    below: 100
+  condition: []
+  action:
+  - service: notify.notify
+    metadata: {}
+    data:
+      message: Chauffe-serviettes sdb haut éteint.
+      title: Info consommation
+  mode: single
